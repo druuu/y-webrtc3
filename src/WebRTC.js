@@ -27,12 +27,32 @@ export default function extend(Y) {
                 {urls: "turn:try.refactored.ai:3478", username: "test99", credential: "test"}
             ];
             var dcs = {};
+            var sdcs = {};
             this.dcs = dcs;
-            var local_media_stream = null; /* our own microphone / webcam */
-            var peers = {};                /* keep track of our peer connections, indexed by peer_id (aka socket.io id) */
-            var peer_media_elements = {};  /* keep track of our <video>/<audio> tags, indexed by peer_id */
+            this.sdcs = dcs;
+            var local_media_stream = null;
+            var peers = {};
+            var peer_media_elements = {};
             var is_first = 'unknown';
             
+
+	        function receiveData(ywebrtc, peer_id) {
+	            var buf, count;
+	            return function onmessage(event) {
+	                if (typeof event.data === 'string') {
+	                    buf = new Uint8Array(parseInt(event.data));
+	                    count = 0;
+	                    return;
+	                }
+	                var data = new Uint8Array(event.data);
+	                buf.set(data, count);
+	                count += data.byteLength;
+	                if (count === buf.byteLength) {
+	                    ywebrtc.receiveMessage(peer_id, buf);
+	                }
+	            };
+	        }
+
             function init(ywebrtc) {
                 signaling_socket.on('connect', function() {
                     join_chat_channel(DEFAULT_CHANNEL, {'whatever-you-want-here': 'stuff'});
@@ -106,19 +126,21 @@ export default function extend(Y) {
             
                     var peer_connection = new RTCPeerConnection({"iceServers": ICE_SERVERS});
                     peers[peer_id] = peer_connection;
+
                     var dataChannel = peer_connection.createDataChannel('data');
+                    var syncDataChannel = peer_connection.createDataChannel('sync_data');
+
                     dataChannel.binaryType = 'arraybuffer';
+                    syncDataChannel.binaryType = 'arraybuffer';
+
                     ywebrtc.dcs[peer_id] = dataChannel;
+                    ywebrtc.sdcs[peer_id] = syncDataChannel;
 
                     ywebrtc.userJoined(peer_id, 'master');
 
-	                dataChannel.onmessage = function (e) {
-	                    var buffer = e.data;
-	                    var decoder = new Y.utils.BinaryDecoder(buffer);
-	                    var roomname = decoder.readVarString();
-	                    if (roomname === options.room) {
-	                        ywebrtc.receivebuffer(peer_id, buffer);
-	                    }
+	                dataChannel.onmessage = receiveData(ywebrtc, peer_id);
+	                syncDataChannel.onmessage = function (e) {
+	                    ywebrtc.receivebuffer(peer_id, e.data);
 	                };
 
                     peer_connection.onicecandidate = function(event) {
@@ -164,14 +186,13 @@ export default function extend(Y) {
                     peer.ondatachannel = function (event) {
                         var dataChannel = event.channel;
                         dataChannel.binaryType = 'arraybuffer';
-	                    dataChannel.onmessage = function (e) {
-	                        var buffer = e.data;
-	                        var decoder = new Y.utils.BinaryDecoder(buffer);
-	                        var roomname = decoder.readVarString();
-	                        if (roomname === options.room) {
-	                            ywebrtc.receivebuffer(peer_id, buffer);
-	                        }
-	                    };
+                        if (dataChannel.label == 'sync_data') {
+	                        dataChannel.onmessage = receiveData(ywebrtc, peer_id);
+                        } else {
+	                        dataChannel.onmessage = function (e) {
+	                            ywebrtc.receivebuffer(peer_id, e.data);
+	                        };
+                        }
                     };
             
                     var remote_description = config.session_description;
@@ -300,30 +321,58 @@ export default function extend(Y) {
             //this.socket.connect()
             //super.reconnect()
         }
+
         send(uid, message) {
-            var this2 = this;
-            var send = function () {
-                var dc = this2.dcs[uid];
-                if (dc.readyState === 'open') {
-	                dc.send(message);
-                }
-                else {
-                    setTimeout(send, 500)
+            console.log('$$$$$$$$$$$$$$$$ syncing...... $$$$$$$$$$$$$$$$$') ;
+            function send2(dataChannel, data2) {
+                if (dataChannel.readyState === 'open') {
+                    var CHUNK_LEN = 64000;
+                    var len = data2.byteLength;
+                    var n = len / CHUNK_LEN | 0;
+                    dataChannel.send(len);
+                    // split the photo and send in chunks of about 64KB
+                    for (var i = 0; i < n; i++) {
+                        var start = i * CHUNK_LEN,
+                            end = (i + 1) * CHUNK_LEN;
+                        dataChannel.send(data2.subarray(start, end));
+                    }
+                    // send the reminder, if any
+                    if (len % CHUNK_LEN) {
+                        dataChannel.send(data2.subarray(n * CHUNK_LEN));
+                    }
+                } else {
+                    setTimeout(send2, 500, dataChannel, data2);
                 }
             }
-            send()
+            send2(this.sdcs[uid], new Uint8Array(message));
         }
+
         broadcast(message) {
             for (var peer_id in this.dcs) {
-                var dc = this.dcs[peer_id];
-                if (dc.readyState === 'open') {
-                    dc.send(message);
+                function send2(dataChannel, data2) {
+                    if (dataChannel.readyState === 'open') {
+                        var CHUNK_LEN = 64000;
+                        var len = data2.byteLength;
+                        var n = len / CHUNK_LEN | 0;
+                        dataChannel.send(len);
+                        // split the photo and send in chunks of about 64KB
+                        for (var i = 0; i < n; i++) {
+                            var start = i * CHUNK_LEN,
+                                end = (i + 1) * CHUNK_LEN;
+                            dataChannel.send(data2.subarray(start, end));
+                        }
+                        // send the reminder, if any
+                        if (len % CHUNK_LEN) {
+                            dataChannel.send(data2.subarray(n * CHUNK_LEN));
+                        }
+                    } else {
+                        console.log('Errrrrrrrrrrrrrrrrrrrrrrrrrrrrrr', peer_id);
+                    }
                 }
-                else {
-                    console.log('Errrrrrrrrrrrrrrrrrrrrrrrrrrrrrr', peer_id);
-                }
+                send2(this.dcs[peer_id], new Uint8Array(message));
             }
         }
+
         isDisconnected() {
             return this.socket.disconnected
         }

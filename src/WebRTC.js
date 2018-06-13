@@ -6,7 +6,6 @@ export default function extend(Y) {
             if (options === undefined) {
                 throw new Error('Options must not be undefined!')
             }
-            options.role = 'slave'
             options.preferUntransformed = true
             options.generateUserId = options.generateUserId || false
             if (options.initSync !== false) {
@@ -22,13 +21,13 @@ export default function extend(Y) {
 
             /****************** start minimal webrtc **********************/
             var signaling_socket = socket;
-            var DEFAULT_CHANNEL = 'some-global-channel-name';
+            var DEFAULT_CHANNEL = 'dinesh';
             var ICE_SERVERS = [
                 {urls: "stun:stun.l.google.com:19302"},
                 {urls: "turn:try.refactored.ai:3478", username: "test99", credential: "test"}
             ];
             var dcs = {};
-            var signaling_socket = null;   /* our socket.io connection to our webserver */
+            this.dcs = dcs;
             var local_media_stream = null; /* our own microphone / webcam */
             var peers = {};                /* keep track of our peer connections, indexed by peer_id (aka socket.io id) */
             var peer_media_elements = {};  /* keep track of our <video>/<audio> tags, indexed by peer_id */
@@ -63,7 +62,7 @@ export default function extend(Y) {
                 });
                 function join_chat_channel(channel, userdata) {
                     signaling_socket.emit('join', {"channel": channel, "userdata": userdata});
-                    //ywebrtc.setUserId(signaling_socket.id);
+                    ywebrtc.userID = signaling_socket.id;
                     function load_notebook2(file_name) {
                         if (typeof Jupyter !== 'undefined'){
                             if (Jupyter.notebook) {
@@ -100,8 +99,6 @@ export default function extend(Y) {
                 signaling_socket.on('addPeer', function(config) {
                     var peer_id = config.peer_id;
             
-                    ywebrtc.userJoined(peer_id, 'master');
-            
                     if (peer_id in peers) {
                         /* This could happen if the user joins multiple channels where the other peer is also in. */
                         return;
@@ -110,18 +107,20 @@ export default function extend(Y) {
                     var peer_connection = new RTCPeerConnection({"iceServers": ICE_SERVERS});
                     peers[peer_id] = peer_connection;
                     var dataChannel = peer_connection.createDataChannel('data');
-                    dcs[peer_id] = dataChannel;
-                    dataChannel.onmessage = function(e) {
-                        console.log(e);
-                        var buffer = e.data;
-                        let decoder = new Y.utils.BinaryDecoder(buffer)
-                        let roomname = decoder.readVarString()
-                        if (roomname === options.room) {
-                            ywebrtc.receiveMessage(peer_id, buffer)
-                        }
-                        //ywebrtc.receiveMessage(peer_id, JSON.parse(e.data));
-                    };
-            
+                    dataChannel.binaryType = 'arraybuffer';
+                    ywebrtc.dcs[peer_id] = dataChannel;
+
+                    ywebrtc.userJoined(peer_id, 'master');
+
+	                dataChannel.onmessage = function (e) {
+	                    var buffer = e.data;
+	                    var decoder = new Y.utils.BinaryDecoder(buffer);
+	                    var roomname = decoder.readVarString();
+	                    if (roomname === options.room) {
+	                        ywebrtc.receivebuffer(peer_id, buffer);
+	                    }
+	                };
+
                     peer_connection.onicecandidate = function(event) {
                         if (event.candidate) {
                             signaling_socket.emit('relayICECandidate', {
@@ -164,10 +163,15 @@ export default function extend(Y) {
             
                     peer.ondatachannel = function (event) {
                         var dataChannel = event.channel;
-                        dataChannel.onmessage = function(e) {
-                            console.log(e);
-                            ywebrtc.receiveMessage(peer_id, JSON.parse(e.data));
-                        };
+                        dataChannel.binaryType = 'arraybuffer';
+	                    dataChannel.onmessage = function (e) {
+	                        var buffer = e.data;
+	                        var decoder = new Y.utils.BinaryDecoder(buffer);
+	                        var roomname = decoder.readVarString();
+	                        if (roomname === options.room) {
+	                            ywebrtc.receivebuffer(peer_id, buffer);
+	                        }
+	                    };
                     };
             
                     var remote_description = config.session_description;
@@ -297,43 +301,29 @@ export default function extend(Y) {
             //super.reconnect()
         }
         send(uid, message) {
+            var this2 = this;
             var send = function () {
-                var dc = dcs[uid];
+                var dc = this2.dcs[uid];
                 if (dc.readyState === 'open') {
-                    dc.send(JSON.stringify(message));
+	                dc.send(message);
                 }
                 else {
                     setTimeout(send, 500)
                 }
             }
-            // try to send the message
             send()
-            //if (this._sentSync) {
-            //    super.send(uid, message)
-            //    this.socket.emit('yjsEvent', message)
-            //}
         }
         broadcast(message) {
-            for (var peer_id in dcs) {
-                var dc = dcs[peer_id];
+            for (var peer_id in this.dcs) {
+                var dc = this.dcs[peer_id];
                 if (dc.readyState === 'open') {
-                    dc.send(JSON.stringify(message));
+                    dc.send(message);
                 }
                 else {
                     console.log('Errrrrrrrrrrrrrrrrrrrrrrrrrrrrrr', peer_id);
                 }
             }
-            //if (this._sentSync) {
-            //    super.broadcast(message)
-            //    this.socket.emit('yjsEvent', message)
-            //}
         }
-
-        //whenRemoteResponsive() {
-        //    return new Promise(resolve => {
-        //        this.socket.emit('yjsResponsive', this.options.room, resolve)
-        //    })
-        //}
         isDisconnected() {
             return this.socket.disconnected
         }

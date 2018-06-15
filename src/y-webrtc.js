@@ -33,7 +33,8 @@ export default function extend(Y) {
             var local_media_stream = null;
             var peers = {};
             var peer_media_elements = {};
-            var is_first = 'unknown';
+            var sockets;
+            this.sockets = sockets;
             
 
 	        function receiveData(ywebrtc, peer_id) {
@@ -59,12 +60,7 @@ export default function extend(Y) {
                 });
             
                 signaling_socket.on('sockets', function (sockets) {
-                    if (sockets === 0) {
-                        is_first = true;
-                    }
-                    else {
-                        is_first = false;
-                    }
+                    ywebrtc.sockets = sockets;
                 });
             
                 signaling_socket.on('disconnect', function() {
@@ -80,37 +76,12 @@ export default function extend(Y) {
                     peers = {};
                     peer_media_elements = {};
                 });
+
                 function join_chat_channel(channel, userdata) {
                     signaling_socket.emit('join', {"channel": channel, "userdata": userdata});
                     ywebrtc.userID = signaling_socket.id;
-                    function load_notebook2(file_name) {
-                        if (typeof Jupyter !== 'undefined'){
-                            if (Jupyter.notebook) {
-                                if (file_name === 'Untitled.ipynb') {
-                                    Jupyter.notebook.load_notebook(file_name);
-                                } else {
-                                    Jupyter.notebook.load_notebook2(file_name);
-                                }
-                            }
-                            else {
-                                setTimeout(load_notebook2, 500, file_name);
-                            }
-                        }
-                        else {
-                            setTimeout(load_notebook2, 500, file_name);
-                        }
-                    }
-                    function initialize_data() {
-                        if (is_first === true) {
-                            load_notebook2('Untitled.ipynb');
-                        } else if (is_first === false) {
-                            load_notebook2('template.ipynb');
-                        } else {
-                            setTimeout(initialize_data, 500);
-                        }
-                    }
-                    initialize_data();
                 }
+
                 function part_chat_channel(channel) {
                     signaling_socket.emit('part', channel);
                 }
@@ -246,80 +217,13 @@ export default function extend(Y) {
             }
             init(self);
             /************************ end minimal_webrtc ****************************/
-
-            //this._onConnect = function () {
-            //    if (options.initSync) {
-            //        if (options.room == null) {
-            //            throw new Error('You must define a room name!')
-            //        }
-            //        self._sentSync = true
-            //        // only sync with server when connect = true
-            //        //socket.emit('joinRoom', options.room)
-            //        //self.userJoined('server', 'master')
-            //        //self.connections.get('server').syncStep2.promise.then(() => {
-            //        //    // set user id when synced with server
-            //        //    self.setUserId(Y.utils.generateUserId())
-            //        //})
-            //    }
-            //    socket.on('yjsEvent', self._onYjsEvent)
-            //    socket.on('disconnect', self._onDisconnect)
-            //}
-
-            //socket.on('connect', this._onConnect)
-            //if (socket.connected) {
-            //    this._onConnect()
-            //} else {
-            //    socket.connect()
-            //}
-
-            //this._onYjsEvent = function (buffer) {
-            //    //let decoder = new Y.utils.BinaryDecoder(buffer)
-            //    //let roomname = decoder.readVarString()
-            //    //if (roomname === options.room) {
-            //    //    self.receiveMessage('server', buffer)
-            //    //}
-            //}
-
-            //this._onDisconnect = function (peer) {
-            //    Y.AbstractConnector.prototype.disconnect.call(self)
-            //}
         }
-
-        /*
-         * Call this if you set options.initSync = false. Yjs will sync with the server after calling this method.
-         */
-        //initSync(opts) {
-        //    if (!this.options.initSync) {
-        //        this.options.initSync = true
-        //        if (opts.room != null) {
-        //            this.options.room = opts.room
-        //        }
-        //    }
-        //    if (this.socket.connected) {
-        //        this._onConnect()
-        //    }
-        //}
 
         disconnect() {
-            //this.socket.emit('leaveRoom', this.options.room)
-            //if (!this.options.socket) {
-            //    this.socket.disconnect()
-            //}
-            //super.disconnect()
         }
         destroy() {
-            //this.disconnect()
-            //this.socket.off('disconnect', this._onDisconnect)
-            //this.socket.off('yjsEvent', this._onYjsEvent)
-            //this.socket.off('connect', this._onConnect)
-            //if (!this.options.socket) {
-            //    this.socket.destroy()
-            //}
-            //this.socket = null
         }
         reconnect() {
-            //this.socket.connect()
-            //super.reconnect()
         }
 
         send(uid, message) {
@@ -379,7 +283,6 @@ export default function extend(Y) {
     }
     Connector.io = io
     Y['webrtc'] = Connector
-    // Y.extend('websockets-client', Connector)
 }
 
 if (typeof Y !== 'undefined') {

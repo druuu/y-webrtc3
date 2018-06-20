@@ -21,7 +21,6 @@ export default function extend(Y) {
 
             /****************** start minimal webrtc **********************/
             var signaling_socket = socket;
-            var DEFAULT_CHANNEL = 'dinesh';
             var ICE_SERVERS = [
                 {urls: "stun:stun.l.google.com:19302"},
                 {urls: "turn:try.refactored.ai:3478", username: "test99", credential: "test"}
@@ -35,7 +34,6 @@ export default function extend(Y) {
             var peer_media_elements = {};
             var sockets;
             this.sockets = sockets;
-            
 
 	        function receiveData(ywebrtc, peer_id) {
 	            var buf, count;
@@ -56,11 +54,11 @@ export default function extend(Y) {
 
             function init(ywebrtc) {
                 signaling_socket.on('connect', function() {
-                    join_chat_channel(DEFAULT_CHANNEL, {'whatever-you-want-here': 'stuff'});
+                    join_chat_channel(ywebrtc.options.room, {'whatever-you-want-here': 'stuff'});
                 });
             
                 signaling_socket.on('sockets', function (sockets) {
-                    ywebrtc.sockets = sockets;
+                    window.sockets = sockets;
                 });
             
                 signaling_socket.on('disconnect', function() {

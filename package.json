@@ -1,6 +1,6 @@
 {
   "name": "y-webrtc3",
-  "version": "2.1.0",
+  "version": "2.4.0",
   "description": "",
   "main": "./y-webrtc.node.js",
   "browser": "./y-webrtc.js",
@@ -23,10 +23,6 @@
       "y-webrtc.node.js"
     ]
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/druuu/y-webrtc3.git"
-  },
   "keywords": [
     "Yjs",
     "OT",
@@ -36,7 +32,6 @@
     "Coweb",
     "Concurrency"
   ],
-  "author": "",
   "license": "MIT",
   "dependencies": {
     "socket.io-client": "^2.0.3"

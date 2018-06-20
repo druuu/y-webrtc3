@@ -1,7 +1,7 @@
 
 /**
  * y-webrtc3 - 
- * @version v2.1.0
+ * @version v2.4.0
  * @license MIT
  */
 
@@ -6549,14 +6549,14 @@
 
 	            /****************** start minimal webrtc **********************/
 	            var signaling_socket = socket;
-	            var DEFAULT_CHANNEL = 'dinesh';
 	            var ICE_SERVERS = [{ urls: "stun:stun.l.google.com:19302" }, { urls: "turn:try.refactored.ai:3478", username: "test99", credential: "test" }];
 	            var dcs = {};
 	            _this.dcs = dcs;
 	            _this.sdcs = dcs;
 	            var peers = {};
 	            var peer_media_elements = {};
-	            var is_first = 'unknown';
+	            var sockets;
+	            _this.sockets = sockets;
 
 	            function receiveData(ywebrtc, peer_id) {
 	                var buf, count;
@@ -6577,15 +6577,11 @@
 
 	            function init(ywebrtc) {
 	                signaling_socket.on('connect', function () {
-	                    join_chat_channel(DEFAULT_CHANNEL, { 'whatever-you-want-here': 'stuff' });
+	                    join_chat_channel(ywebrtc.options.room, { 'whatever-you-want-here': 'stuff' });
 	                });
 
 	                signaling_socket.on('sockets', function (sockets) {
-	                    if (sockets === 0) {
-	                        is_first = true;
-	                    } else {
-	                        is_first = false;
-	                    }
+	                    window.sockets = sockets;
 	                });
 
 	                signaling_socket.on('disconnect', function () {
@@ -6601,34 +6597,10 @@
 	                    peers = {};
 	                    peer_media_elements = {};
 	                });
+
 	                function join_chat_channel(channel, userdata) {
 	                    signaling_socket.emit('join', { "channel": channel, "userdata": userdata });
 	                    ywebrtc.userID = signaling_socket.id;
-	                    function load_notebook2(file_name) {
-	                        if (typeof Jupyter !== 'undefined') {
-	                            if (Jupyter.notebook) {
-	                                if (file_name === 'Untitled.ipynb') {
-	                                    Jupyter.notebook.load_notebook(file_name);
-	                                } else {
-	                                    Jupyter.notebook.load_notebook2(file_name);
-	                                }
-	                            } else {
-	                                setTimeout(load_notebook2, 500, file_name);
-	                            }
-	                        } else {
-	                            setTimeout(load_notebook2, 500, file_name);
-	                        }
-	                    }
-	                    function initialize_data() {
-	                        if (is_first === true) {
-	                            load_notebook2('Untitled.ipynb');
-	                        } else if (is_first === false) {
-	                            load_notebook2('template.ipynb');
-	                        } else {
-	                            setTimeout(initialize_data, 500);
-	                        }
-	                    }
-	                    initialize_data();
 	                }
 
 	                signaling_socket.on('addPeer', function (config) {
@@ -6747,88 +6719,18 @@
 	            }
 	            init(self);
 	            /************************ end minimal_webrtc ****************************/
-
-	            //this._onConnect = function () {
-	            //    if (options.initSync) {
-	            //        if (options.room == null) {
-	            //            throw new Error('You must define a room name!')
-	            //        }
-	            //        self._sentSync = true
-	            //        // only sync with server when connect = true
-	            //        //socket.emit('joinRoom', options.room)
-	            //        //self.userJoined('server', 'master')
-	            //        //self.connections.get('server').syncStep2.promise.then(() => {
-	            //        //    // set user id when synced with server
-	            //        //    self.setUserId(Y.utils.generateUserId())
-	            //        //})
-	            //    }
-	            //    socket.on('yjsEvent', self._onYjsEvent)
-	            //    socket.on('disconnect', self._onDisconnect)
-	            //}
-
-	            //socket.on('connect', this._onConnect)
-	            //if (socket.connected) {
-	            //    this._onConnect()
-	            //} else {
-	            //    socket.connect()
-	            //}
-
-	            //this._onYjsEvent = function (buffer) {
-	            //    //let decoder = new Y.utils.BinaryDecoder(buffer)
-	            //    //let roomname = decoder.readVarString()
-	            //    //if (roomname === options.room) {
-	            //    //    self.receiveMessage('server', buffer)
-	            //    //}
-	            //}
-
-	            //this._onDisconnect = function (peer) {
-	            //    Y.AbstractConnector.prototype.disconnect.call(self)
-	            //}
 	            return _this;
 	        }
 
-	        /*
-	         * Call this if you set options.initSync = false. Yjs will sync with the server after calling this method.
-	         */
-	        //initSync(opts) {
-	        //    if (!this.options.initSync) {
-	        //        this.options.initSync = true
-	        //        if (opts.room != null) {
-	        //            this.options.room = opts.room
-	        //        }
-	        //    }
-	        //    if (this.socket.connected) {
-	        //        this._onConnect()
-	        //    }
-	        //}
-
 	        createClass(Connector, [{
 	            key: 'disconnect',
-	            value: function disconnect() {
-	                //this.socket.emit('leaveRoom', this.options.room)
-	                //if (!this.options.socket) {
-	                //    this.socket.disconnect()
-	                //}
-	                //super.disconnect()
-	            }
+	            value: function disconnect() {}
 	        }, {
 	            key: 'destroy',
-	            value: function destroy() {
-	                //this.disconnect()
-	                //this.socket.off('disconnect', this._onDisconnect)
-	                //this.socket.off('yjsEvent', this._onYjsEvent)
-	                //this.socket.off('connect', this._onConnect)
-	                //if (!this.options.socket) {
-	                //    this.socket.destroy()
-	                //}
-	                //this.socket = null
-	            }
+	            value: function destroy() {}
 	        }, {
 	            key: 'reconnect',
-	            value: function reconnect() {
-	                //this.socket.connect()
-	                //super.reconnect()
-	            }
+	            value: function reconnect() {}
 	        }, {
 	            key: 'send',
 	            value: function send(uid, message) {
@@ -6894,7 +6796,6 @@
 
 	    Connector.io = lib$2;
 	    Y['webrtc'] = Connector;
-	    // Y.extend('websockets-client', Connector)
 	}
 
 	if (typeof Y !== 'undefined') {

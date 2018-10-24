@@ -29,6 +29,8 @@ export default function extend(Y) {
             var sdcs = {};
             this.dcs = dcs;
             this.sdcs = dcs;
+            //dcs2: user datachannel
+            this.dcs2 = {};
             var local_media_stream = null;
             var peers = {};
             var peer_media_elements = {};
@@ -51,6 +53,13 @@ export default function extend(Y) {
 	                }
 	            };
 	        }
+
+            function receiveData2(ywebrtc, peer_id) {
+                var buf, count;
+                return function onmessage(event) {
+                    ywebrtc.dcs2[peer_id].send(event.data);
+                };
+            }
 
             function init(ywebrtc) {
                 signaling_socket.on('connect', function() {
@@ -98,12 +107,17 @@ export default function extend(Y) {
 
                     var dataChannel = peer_connection.createDataChannel('data');
                     var syncDataChannel = peer_connection.createDataChannel('sync_data');
+                    //datachannel2: user data datachannel
+                    //data3: user data
+                    var dataChannel2 = peer_connection.createDataChannel('data3');
 
                     dataChannel.binaryType = 'arraybuffer';
                     syncDataChannel.binaryType = 'arraybuffer';
+                    dataChannel2.binaryType = 'arraybuffer';
 
                     ywebrtc.dcs[peer_id] = dataChannel;
                     ywebrtc.sdcs[peer_id] = syncDataChannel;
+                    ywebrtc.dcs2[peer_id] = dataChannel2;
 
                     ywebrtc.userJoined(peer_id, 'master');
 
@@ -111,6 +125,7 @@ export default function extend(Y) {
 	                syncDataChannel.onmessage = function (e) {
 	                    ywebrtc.receivebuffer(peer_id, e.data);
 	                };
+	                dataChannel2.onmessage = receiveData2(ywebrtc, peer_id);;
 
                     peer_connection.onicecandidate = function(event) {
                         if (event.candidate) {
@@ -159,7 +174,7 @@ export default function extend(Y) {
 	                        dataChannel.onmessage = receiveData(ywebrtc, peer_id);
                         } else {
 	                        dataChannel.onmessage = function (e) {
-	                            ywebrtc.receivebuffer(peer_id, e.data);
+	                            ywebrtc.receiveData(ywebrtc, e.data);
 	                        };
                         }
                     };

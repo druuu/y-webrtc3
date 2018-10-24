@@ -57,7 +57,10 @@ export default function extend(Y) {
             function receiveData2(ywebrtc, peer_id) {
                 var buf, count;
                 return function onmessage(event) {
-                    ywebrtc.dcs2[peer_id].send(event.data);
+                    //ywebrtc.dcs2[peer_id].send(event.data);
+                    console.log('receiveData2....');
+                    console.log(peer_id);
+                    console.log(event);
                 };
             }
 
@@ -173,9 +176,7 @@ export default function extend(Y) {
                         if (dataChannel.label == 'sync_data') {
 	                        dataChannel.onmessage = receiveData(ywebrtc, peer_id);
                         } else {
-	                        dataChannel.onmessage = function (e) {
-	                            ywebrtc.receiveData(ywebrtc, e.data);
-	                        };
+                            dataChannel.onmessage = receiveData2(ywebrtc, peer_id);
                         }
                     };
             

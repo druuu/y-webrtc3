@@ -45,6 +45,7 @@ function extend(Y) {
             var peer_media_elements = {};
             var sockets;
             this.sockets = sockets;
+            this.markers = {};
 
 	        function receiveData(ywebrtc, peer_id) {
 	            var buf, count;
@@ -63,12 +64,33 @@ function extend(Y) {
 	            };
 	        }
 
+            function get_cell(id) {
+                var cells = Jupyter.notebook.get_cells();
+                for (var i=0; i<cells.length; i++) {
+                    if (cells[i].id === id) {
+                        return cells[i];
+                    }
+                }
+            }
+
             function receiveData2(ywebrtc, peer_id) {
                 return function onmessage(event) {
-                    //ywebrtc.dcs2[peer_id].send(event.data);
-                    console.log('receiveData2....');
-                    console.log(peer_id);
                     console.log(event);
+                    var data = JSON.parse(event.data);
+                    var cm = get_cell(data.id).code_mirror;
+                    const cursorCoords = cm.cursorCoords(data);
+                    const cursorElement = document.createElement('span');
+                    cursorElement.style.borderLeftStyle = 'solid';
+                    cursorElement.style.borderLeftWidth = '2px';
+                    cursorElement.style.borderLeftColor = '#ff0000';
+                    cursorElement.style.height = `${(cursorCoords.bottom - cursorCoords.top)}px`;
+                    cursorElement.style.padding = 0;
+                    cursorElement.style.zIndex = 0;
+                    console.log(ywebrtc.markers);
+                    ywebrtc.markers[peer_id].clear();
+                    console.log(ywebrtc.markers);
+                    ywebrtc.markers[peer_id] = cm.setBookmark(data, { widget: cursorElement });
+                    console.log(ywebrtc.markers);
                 };
             }
 
@@ -179,8 +201,7 @@ function extend(Y) {
                         if (dataChannel.label == 'sync_data') {
 	                        dataChannel.onmessage = receiveData(ywebrtc, peer_id);
                         } else {
-	                        dataChannel.onmessage = function (e) {
-	                        };
+                            dataChannel.onmessage = receiveData2(ywebrtc, peer_id);
                         }
                     };
             

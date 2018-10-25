@@ -76,12 +76,11 @@ export default function extend(Y) {
                     cursorElement.style.height = cursorCoords.bottom - cursorCoords.top + 'px';
                     cursorElement.style.padding = 0;
                     cursorElement.style.zIndex = 0;
-                    ywebrtc.markers[peer_id].clear();
-                    console.log(ywebrtc.markers);
-                    if (ywebrtc.markers[peer_id]) {
-                        ywebrtc.markers[peer_id].clear();
+                    var id = peer_id + data.id;
+                    if (ywebrtc.markers[id]) {
+                        ywebrtc.markers[id].clear();
                     }
-                    ywebrtc.markers[peer_id] = cm.setBookmark(data, { widget: cursorElement });
+                    ywebrtc.markers[id] = cm.setBookmark(data, { widget: cursorElement });
                 };
             }
 

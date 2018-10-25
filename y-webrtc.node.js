@@ -66,7 +66,7 @@ function extend(Y) {
 
             function get_cell(id) {
                 var cells = Jupyter.notebook.get_cells();
-                for (var i=0; i<cells.length; i++) {
+                for (var i = 0; i < cells.length; i++) {
                     if (cells[i].id === id) {
                         return cells[i];
                     }
@@ -75,22 +75,21 @@ function extend(Y) {
 
             function receiveData2(ywebrtc, peer_id) {
                 return function onmessage(event) {
-                    console.log(event);
                     var data = JSON.parse(event.data);
                     var cm = get_cell(data.id).code_mirror;
-                    const cursorCoords = cm.cursorCoords(data);
-                    const cursorElement = document.createElement('span');
+                    var cursorCoords = cm.cursorCoords(data);
+                    var cursorElement = document.createElement('span');
                     cursorElement.style.borderLeftStyle = 'solid';
                     cursorElement.style.borderLeftWidth = '2px';
                     cursorElement.style.borderLeftColor = '#ff0000';
-                    cursorElement.style.height = `${(cursorCoords.bottom - cursorCoords.top)}px`;
+                    cursorElement.style.height = cursorCoords.bottom - cursorCoords.top + 'px';
                     cursorElement.style.padding = 0;
                     cursorElement.style.zIndex = 0;
-                    console.log(ywebrtc.markers);
-                    ywebrtc.markers[peer_id].clear();
-                    console.log(ywebrtc.markers);
-                    ywebrtc.markers[peer_id] = cm.setBookmark(data, { widget: cursorElement });
-                    console.log(ywebrtc.markers);
+                    var id = peer_id + data.id;
+                    if (ywebrtc.markers[id]) {
+                        ywebrtc.markers[id].clear();
+                    }
+                    ywebrtc.markers[id] = cm.setBookmark(data, { widget: cursorElement });
                 };
             }
 

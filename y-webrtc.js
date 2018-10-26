@@ -6591,7 +6591,7 @@
 	                    var cursorElement = document.createElement('span');
 	                    cursorElement.style.borderLeftStyle = 'solid';
 	                    cursorElement.style.borderLeftWidth = '2px';
-	                    cursorElement.style.borderLeftColor = '#ff0000';
+	                    cursorElement.style.borderLeftColor = data.color;
 	                    cursorElement.style.height = cursorCoords.bottom - cursorCoords.top + 'px';
 	                    cursorElement.style.padding = 0;
 	                    cursorElement.style.zIndex = 0;

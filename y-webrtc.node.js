@@ -79,12 +79,14 @@ function extend(Y) {
                     var cm = get_cell(data.id).code_mirror;
                     var cursorCoords = cm.cursorCoords(data);
                     var cursorElement = document.createElement('span');
+                    cursorElement.style.padding = '0px';
+                    cursorElement.style.opacity = 0.3;
+                    cursorElement.style.position = 'absolute';
                     cursorElement.style.borderLeftStyle = 'solid';
-                    cursorElement.style.borderLeftWidth = '2px';
+                    cursorElement.style.borderLeftWidth = '8px';
                     cursorElement.style.borderLeftColor = data.color;
                     cursorElement.style.height = cursorCoords.bottom - cursorCoords.top + 'px';
-                    cursorElement.style.padding = 0;
-                    cursorElement.style.zIndex = 0;
+                    cursorElement.title = data.username;
                     var id = peer_id + data.id;
                     if (ywebrtc.markers[id]) {
                         ywebrtc.markers[id].clear();

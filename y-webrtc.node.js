@@ -1,7 +1,7 @@
 
 /**
  * y-webrtc3 - 
- * @version v2.4.0
+ * @version v2.5.0
  * @license MIT
  */
 
@@ -45,7 +45,6 @@ function extend(Y) {
             var peer_media_elements = {};
             var sockets;
             this.sockets = sockets;
-            this.markers = {};
 
 	        function receiveData(ywebrtc, peer_id) {
 	            var buf, count;
@@ -64,34 +63,9 @@ function extend(Y) {
 	            };
 	        }
 
-            function get_cell(id) {
-                var cells = Jupyter.notebook.get_cells();
-                for (var i = 0; i < cells.length; i++) {
-                    if (cells[i].id === id) {
-                        return cells[i];
-                    }
-                }
-            }
-
             function receiveData2(ywebrtc, peer_id) {
                 return function onmessage(event) {
-                    var data = JSON.parse(event.data);
-                    var cm = get_cell(data.id).code_mirror;
-                    var cursorCoords = cm.cursorCoords(data);
-                    var cursorElement = document.createElement('span');
-                    cursorElement.style.padding = '0px';
-                    cursorElement.style.opacity = 0.3;
-                    cursorElement.style.position = 'absolute';
-                    cursorElement.style.borderLeftStyle = 'solid';
-                    cursorElement.style.borderLeftWidth = '8px';
-                    cursorElement.style.borderLeftColor = data.color;
-                    cursorElement.style.height = cursorCoords.bottom - cursorCoords.top + 'px';
-                    cursorElement.title = data.username;
-                    var id = peer_id + data.id;
-                    if (ywebrtc.markers[id]) {
-                        ywebrtc.markers[id].clear();
-                    }
-                    ywebrtc.markers[id] = cm.setBookmark(data, { widget: cursorElement });
+                    ywebrtc.dcs2[peer_id].send(event.data);
                 };
             }
 
@@ -202,7 +176,9 @@ function extend(Y) {
                         if (dataChannel.label == 'sync_data') {
 	                        dataChannel.onmessage = receiveData(ywebrtc, peer_id);
                         } else {
-                            dataChannel.onmessage = receiveData2(ywebrtc, peer_id);
+	                        dataChannel.onmessage = function (e) {
+	                            ywebrtc.receiveData(ywebrtc, e.data);
+	                        };
                         }
                     };
             

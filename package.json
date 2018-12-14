@@ -1,6 +1,6 @@
 {
   "name": "y-webrtc3",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "description": "",
   "main": "./y-webrtc.node.js",
   "browser": "./y-webrtc.js",

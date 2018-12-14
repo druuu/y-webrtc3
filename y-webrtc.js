@@ -6545,7 +6545,7 @@
 
 	            /****************** start minimal webrtc **********************/
 	            var signaling_socket = socket;
-	            var ICE_SERVERS = [{ urls: "stun:stun.l.google.com:19302" }, { urls: "turn:try.refactored.ai:3478", username: "test99", credential: "test" }];
+	            var ICE_SERVERS = [{ urls: "stun:stun.l.google.com:19302" }, { urls: "turn:turn.colaberry.cloud:3478", username: "test99", credential: "test" }];
 	            var dcs = {};
 	            _this.dcs = dcs;
 	            _this.sdcs = dcs;

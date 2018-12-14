@@ -23,7 +23,7 @@ export default function extend(Y) {
             var signaling_socket = socket;
             var ICE_SERVERS = [
                 {urls: "stun:stun.l.google.com:19302"},
-                {urls: "turn:try.refactored.ai:3478", username: "test99", credential: "test"}
+                {urls: "turn:turn.colaberry.cloud:3478", username: "test99", credential: "test"}
             ];
             var dcs = {};
             var sdcs = {};

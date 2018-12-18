@@ -35,8 +35,8 @@ export default function extend(Y) {
             var peers = {};
             var peer_media_elements = {};
             var sockets;
-            this.markers = {};
             this.sockets = sockets;
+            this.markers = {};
 
 	        function receiveData(ywebrtc, peer_id) {
 	            var buf, count;
@@ -65,7 +65,6 @@ export default function extend(Y) {
             }
 
             function receiveData2(ywebrtc, peer_id) {
-                var buf, count;
                 return function onmessage(event) {
                     var data = JSON.parse(event.data);
                     var cm = get_cell(data.id).code_mirror;
@@ -84,7 +83,6 @@ export default function extend(Y) {
                         ywebrtc.markers[id].clear();
                     }
                     ywebrtc.markers[id] = cm.setBookmark(data, { widget: cursorElement });
-                    ywebrtc.dcs2[peer_id].send(event.data);
                 };
             }
 
